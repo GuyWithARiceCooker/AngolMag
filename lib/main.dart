@@ -20,6 +20,23 @@ import 'package:hive_again/animation_thingy.dart';
 import 'package:url_launcher/url_launcher.dart'; // url-ek megnyitásához .. tádáá
 import 'package:flutter_tts/flutter_tts.dart';
 
+// Téma: 'system' | 'light' | 'dark' (SharedPreferences-be mentve)
+final themeModeSetting = PersistentValueNotifier<String>(
+  sharedPreferencesKey: 'themeMode',
+  initialValue: 'system',
+);
+
+ThemeMode themeModeFromSetting(String v) {
+  switch (v) {
+    case 'light':
+      return ThemeMode.light;
+    case 'dark':
+      return ThemeMode.dark;
+    default:
+      return ThemeMode.system;
+  }
+}
+
 final showBudges = PersistentValueNotifier<bool>(
   sharedPreferencesKey: 'showBudges',
   initialValue: false,
@@ -139,7 +156,9 @@ void main() async {
   // await nextPassiveCard();
   // print("${currentWord.value} ${currentMeaning.value}");
 
-  runApp(MaterialApp(
+  runApp(ValueListenableBuilder<String>(
+    valueListenable: themeModeSetting,
+    builder: (context, mode, _) => MaterialApp(
     theme: ThemeData(
       appBarTheme: AppBarTheme(
         color: Colors.amberAccent,
@@ -156,7 +175,7 @@ void main() async {
       /* dark theme settings */
     ),
     // themeMode: darkMode.value,
-    themeMode: ThemeMode.system,
+    themeMode: themeModeFromSetting(mode),
     /* ThemeMode.system to follow system theme, 
          ThemeMode.light for light theme, 
          ThemeMode.dark for dark theme
@@ -164,6 +183,7 @@ void main() async {
     debugShowCheckedModeBanner: false,
     title: 'AngolMag',
     home: HomeRoute(),
+    ),
   ));
 }
 
@@ -173,9 +193,31 @@ class HomeRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      body: SafeArea(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 720;
+          return ListView(
+            padding: const EdgeInsets.only(top: 12, bottom: 24),
+            children: [
+              // Felső sor: a görgethető tartalom része (nem rögzített).
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: wide
+                          ? kContentMaxWidth + 2 * kTopRowOverhang
+                          : double.infinity),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: wide ? 0 : 10),
+                    child: const TopRow(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: wide ? kContentMaxWidth : double.infinity),
+                  child: Column(
           children: [
             Card(
               margin: EdgeInsets.all(10),
@@ -459,9 +501,84 @@ class HomeRoute extends StatelessWidget {
               ],
             ),
           ],
-        ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
+  }
+}
+
+// A fő tartalom maximális szélessége széles képernyőn.
+const double kContentMaxWidth = 560;
+// Ennyivel lóg túl a felső sor a tartalom szélén (>= 720 px).
+const double kTopRowOverhang = 24;
+
+/// Felső sor: balra az "AngolMag" szóvédjegy, jobbra a téma váltó
+/// (DRK/LGT). Az appnak nincs felület-nyelv váltója, ezért ENG/HUN nincs.
+class TopRow extends StatelessWidget {
+  const TopRow({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Row(
+      children: [
+        Text(
+          'AngolMag',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const Spacer(),
+        TopRowButton(
+          label: isDark ? 'LGT' : 'DRK',
+          tooltip: isDark ? 'Világos mód' : 'Sötét mód',
+          onPressed: () {
+            themeModeSetting.value = isDark ? 'light' : 'dark';
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// 13px, min. 52x38, 1.5px keret, szögletes sarkok, borostyán színek.
+class TopRowButton extends StatelessWidget {
+  const TopRowButton(
+      {super.key, required this.label, required this.onPressed, this.tooltip});
+
+  final String label;
+  final String? tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = isDark ? Colors.amber : theme.colorScheme.primary;
+    final button = OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        minimumSize: const Size(52, 38),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        side: BorderSide(color: color, width: 1.5),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        textStyle: const TextStyle(
+            fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+      ),
+      child: Text(label),
+    );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 
