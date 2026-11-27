@@ -33,7 +33,7 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build web --release --base-href /angolmag/
+      - run: flutter build web --release --base-href /AngolMag/
 
       - name: Pages extras
         run: |
