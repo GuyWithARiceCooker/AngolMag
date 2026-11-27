@@ -1,0 +1,36 @@
+name: hive_again
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_persistent_value_notifier: ^1.0.14
+  flutter_reactive_value: ^2.0.1
+  flutter_tts: ^4.0.2
+  font_awesome_flutter: ^10.7.0
+  fsrs: ^1.1.1
+  hive_flutter: ^1.1.0
+  icons_launcher: ^2.1.7
+  translator: ^1.0.0
+  url_launcher: ^6.2.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+icons_launcher:
+  image_path: "assets/ic_logo_border.png"
+  platforms:
+    android:
+      enable: true
+    ios:
+      enable: true
